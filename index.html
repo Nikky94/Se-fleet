@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天鷹車隊報表</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+            overflow-x: auto;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: 150px;
+        }
+        
+        .tab-btn:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            font-weight: bold;
+        }
+        
+        .content {
+            padding: 30px;
+            min-height: 600px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .stat-card .unit {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .chart-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-critical {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .status-warning {
+            background: #ffd93d;
+            color: #333;
+        }
+        
+        .status-normal {
+            background: #51cf66;
+            color: white;
+        }
+        
+        .status-completed {
+            background: #868e96;
+            color: white;
+        }
+        
+        .status-terminated {
+            background: #ff922b;
+            color: white;
+        }
+        
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .search-filter input,
+        .search-filter select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+        
+        .search-filter input {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #ddd;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .profit-positive {
+            color: #51cf66;
+            font-weight: bold;
+        }
+
+        .profit-negative {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .summary-box h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .summary-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .summary-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .summary-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 天鷹車隊報表</h1>
+            <p>10年期趨勢分析 | 多維度成本拆解 | 實時決策支持</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('overview')">📊 車隊總覽</button>
+            <button class="tab-btn" onclick="switchTab('trends')">📈 年度趨勢</button>
+            <button class="tab-btn" onclick="switchTab('vehicles')">🚙 車輛分析</button>
+            <button class="tab-btn" onclick="switchTab('sold')">✅ 已出售車輛</button>
+            <button class="tab-btn" onclick="switchTab('terminated')">⛔ 解約車輛</button>
+            <button class="tab-btn" onclick="switchTab('profitability')">💰 個別損益</button>
+            <button class="tab-btn" onclick="switchTab('costs')">🔧 成本結構</button>
+        </div>
+        
+        <div class="content">
+            <!-- 車隊總覽 -->
+            <div id="overview" class="tab-content active">
+                <h2 style="margin-bottom: 20px;">車隊整體現況</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>總車輛數</h3>
+                        <div class="value" id="totalVehicles">30</div>
+                        <div class="unit">台</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>使用中</h3>
+                        <div class="value" id="activeVehicles">29</div>
+                        <div class="unit">台</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>閒置</h3>
+                        <div class="value" id="idleVehicles">1</div>
+                        <div class="unit">台</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>維修中</h3>
+                        <div class="value" id="maintenanceVehicles">0</div>
+                        <div class="unit">台</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>已出售</h3>
+                        <div class="value" id="soldVehicles">28</div>
+                        <div class="unit">台</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>中途解約</h3>
+                        <div class="value" id="terminatedVehicles">5</div>
+                        <div class="unit">台</div>
+                    </div>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="typePerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 年度趨勢 -->
+            <div id="trends" class="tab-content">
+                <h2 style="margin-bottom: 20px;">10年期營運趨勢分析</h2>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>過去5年 (實績)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffd93d;"></div>
+                        <span>未來5年 (預測)</span>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="claimRateChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="utilizationChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="profitTrendChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 車輛分析 -->
+            <div id="vehicles" class="tab-content">
+                <h2 style="margin-bottom: 20px;">到期車輛分析</h2>
+                
+                <div class="search-filter">
+                    <input type="text" id="searchVehicle" placeholder="🔍 搜尋車牌 / 車型..." onkeyup="filterVehicles()">
+                    <select id="statusFilter" onchange="filterVehicles()">
+                        <option value="">全部狀態</option>
+                        <option value="critical">🔴 緊急</option>
+                        <option value="warning">🟡 警示</option>
+                        <option value="normal">🟢 一般</option>
+                    </select>
+                </div>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="expiryTimelineChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="expiryProfitChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="vehicleTable">
+                        <thead>
+                            <tr>
+                                <th>車輛ID</th>
+                                <th>車牌</th>
+                                <th>車型</th>
+                                <th>到期日</th>
+                                <th>收益</th>
+                                <th>成本</th>
+                                <th>淨利</th>
+                                <th>利潤率</th>
+                                <th>使用率</th>
+                                <th>狀態</th>
+                                <th>建議</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehicleTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 已出售車輛 -->
+            <div id="sold" class="tab-content">
+                <h2 style="margin-bottom: 20px;">已出售車輛明細</h2>
+
+                <div class="summary-box">
+                    <h3>已出售車輛統計摘要</h3>
+                    <div class="summary-content">
+                        <div class="summary-item">
+                            <div class="label">已出售台數</div>
+                            <div class="value" id="soldCount">5</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">總購車成本</div>
+                            <div class="value" id="soldTotalPurchase">$5.7M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">總出售收入</div>
+                            <div class="value" id="soldTotalSale">$2.65M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">租金收入</div>
+                            <div class="value" id="soldTotalRental">$22.0M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">營運成本</div>
+                            <div class="value" id="soldTotalCost">$15.15M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">總損益</div>
+                            <div class="value profit-positive" id="soldTotalProfit">$4.95M</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>車輛ID</th>
+                                <th>車牌</th>
+                                <th>車型</th>
+                                <th>購入日期</th>
+                                <th>出售日期</th>
+                                <th>購車價</th>
+                                <th>出售價</th>
+                                <th>租金收入</th>
+                                <th>營運成本</th>
+                                <th>總損益</th>
+                                <th>持有年限</th>
+                                <th>備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="soldTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 解約車輛 -->
+            <div id="terminated" class="tab-content">
+                <h2 style="margin-bottom: 20px;">中途解約車輛明細</h2>
+
+                <div class="summary-box">
+                    <h3>解約車輛統計摘要</h3>
+                    <div class="summary-content">
+                        <div class="summary-item">
+                            <div class="label">解約台數</div>
+                            <div class="value" id="termCount">5</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">購車成本</div>
+                            <div class="value" id="termTotalPurchase">$5.9M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">租金收入</div>
+                            <div class="value" id="termTotalRental">$9.75M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">違約金收入</div>
+                            <div class="value" id="termTotalFee">$0.87M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">營運成本</div>
+                            <div class="value" id="termTotalCost">$7.65M</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">總損益</div>
+                            <div class="value profit-positive" id="termTotalProfit">$3.27M</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>車輛ID</th>
+                                <th>車牌</th>
+                                <th>車型</th>
+                                <th>租賃開始</th>
+                                <th>解約日期</th>
+                                <th>購車價</th>
+                                <th>租金收入</th>
+                                <th>違約金</th>
+                                <th>營運成本</th>
+                                <th>總損益</th>
+                                <th>持有年限</th>
+                                <th>解約原因</th>
+                                <th>備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="terminatedTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 個別損益 -->
+            <div id="profitability" class="tab-content">
+                <h2 style="margin-bottom: 20px;">個別車輛損益分析</h2>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="vehicleComparisonChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="marginRankChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 成本結構 -->
+            <div id="costs" class="tab-content">
+                <h2 style="margin-bottom: 20px;">成本結構分析</h2>
+                
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="costStructureChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="typeMarginChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="costStackChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>進階車隊營運績效報表 | 報告日期：<span id="reportDate">2026-02-25</span> | GA Dept. - Fleet Management Division</p>
+        </div>
+    </div>
+    
+    <script>
+        // 數據載入
+        const fleetData = {
+            "reportDate": "2026-02-25",
+            "reportTitle": "進階車隊營運績效報表 (10年期趨勢分析)",
+            "company": "GA Dept. - Fleet Management Division",
+            "summary": {
+                "totalVehicles": 120,
+                "status": {
+                    "active": 85,
+                    "idle": 12,
+                    "maintenance": 8,
+                    "terminated": 10,
+                    "sold": 5
+                },
+                "vehicleTypes": {
+                    "Sedan": 40,
+                    "SUV": 30,
+                    "MPV": 25,
+                    "VAN": 15,
+                    "Track": 10
+                },
+                "fleetAge": {
+                    "under1Year": 15,
+                    "1to3Years": 45,
+                    "3to5Years": 40,
+                    "over5Years": 20
+                }
+            },
+            "yearlyTrend": [
+                {"year": 2021, "revenue": 12500000, "expense": 9500000, "profit": 3000000, "claimRate": 4.2, "utilization": 82.5},
+                {"year": 2022, "revenue": 13800000, "expense": 10200000, "profit": 3600000, "claimRate": 3.8, "utilization": 84.2},
+                {"year": 2023, "revenue": 15200000, "expense": 11500000, "profit": 3700000, "claimRate": 4.5, "utilization": 86.8},
+                {"year": 2024, "revenue": 16500000, "expense": 12800000, "profit": 3700000, "claimRate": 4.1, "utilization": 85.5},
+                {"year": 2025, "revenue": 17800000, "expense": 13500000, "profit": 4300000, "claimRate": 3.9, "utilization": 88.2},
+                {"year": 2026, "revenue": 18500000, "expense": 14200000, "profit": 4300000, "claimRate": 4.0, "utilization": 87.5, "forecast": true},
+                {"year": 2027, "revenue": 19200000, "expense": 14800000, "profit": 4400000, "claimRate": 4.0, "utilization": 88.0, "forecast": true},
+                {"year": 2028, "revenue": 20500000, "expense": 15500000, "profit": 5000000, "claimRate": 3.8, "utilization": 89.5, "forecast": true},
+                {"year": 2029, "revenue": 21800000, "expense": 16200000, "profit": 5600000, "claimRate": 3.7, "utilization": 90.2, "forecast": true},
+                {"year": 2030, "revenue": 23000000, "expense": 17000000, "profit": 6000000, "claimRate": 3.6, "utilization": 91.5, "forecast": true}
+            ],
+            "costStructure": {
+                "acquisition": 45.0,
+                "tax": 12.5,
+                "maintenance": 18.5,
+                "insurance": 15.0,
+                "other": 9.0
+            },
+            "typePerformance": [
+                {"type": "Sedan", "count": 40, "utilization": 82.5, "profitMargin": 12.5, "avgCost": 850000},
+                {"type": "SUV", "count": 30, "utilization": 88.2, "profitMargin": 15.8, "avgCost": 1250000},
+                {"type": "MPV", "count": 25, "utilization": 91.5, "profitMargin": 18.2, "avgCost": 1550000},
+                {"type": "VAN", "count": 15, "utilization": 85.0, "profitMargin": 10.5, "avgCost": 950000},
+                {"type": "Track", "count": 10, "utilization": 94.5, "profitMargin": 22.4, "avgCost": 2550000}
+            ],
+            "expiringVehicles": [
+                {
+                    "id": "GA-2021-001",
+                    "plate": "ABC-8888",
+                    "model": "Toyota Camry",
+                    "type": "Sedan",
+                    "leaseEnd": "2026-03-15",
+                    "revenue": 1200000,
+                    "cost": 950000,
+                    "profit": 250000,
+                    "margin": 20.8,
+                    "utilization": 88.5,
+                    "status": "critical",
+                    "recommendation": "高收益車輛，建議續約或轉售高價"
+                },
+                {
+                    "id": "CEO-001",
+                    "plate": "BOSS-1",
+                    "model": "Mercedes-Benz S-Class",
+                    "type": "Sedan",
+                    "leaseEnd": "2026-06-01",
+                    "revenue": 4500000,
+                    "cost": 4200000,
+                    "profit": 300000,
+                    "margin": 6.7,
+                    "utilization": 65.0,
+                    "status": "warning",
+                    "recommendation": "高階座車，維護成本偏高，評估換購新車"
+                },
+                {
+                    "id": "HSR-005",
+                    "plate": "HSR-5566",
+                    "model": "VW Multivan",
+                    "type": "MPV",
+                    "leaseEnd": "2026-08-20",
+                    "revenue": 2800000,
+                    "cost": 2100000,
+                    "profit": 700000,
+                    "margin": 25.0,
+                    "utilization": 95.2,
+                    "status": "normal",
+                    "recommendation": "高鐵接駁主力，高稼動率，建議續約"
+                },
+                {
+                    "id": "TRK-002",
+                    "plate": "TRK-1234",
+                    "model": "Isuzu F-Series",
+                    "type": "Track",
+                    "leaseEnd": "2027-02-15",
+                    "revenue": 5500000,
+                    "cost": 4100000,
+                    "profit": 1400000,
+                    "margin": 25.5,
+                    "utilization": 92.0,
+                    "status": "normal",
+                    "recommendation": "穩定收益貨車，按計畫保養"
+                },
+                {
+                    "id": "VAN-012",
+                    "plate": "VAN-9900",
+                    "model": "Ford Transit",
+                    "type": "VAN",
+                    "leaseEnd": "2026-04-10",
+                    "revenue": 1500000,
+                    "cost": 1550000,
+                    "profit": -50000,
+                    "margin": -3.3,
+                    "utilization": 72.0,
+                    "status": "critical",
+                    "recommendation": "虧損車輛，租約期滿即刻處分"
+                }
+            ],
+            "soldVehicles": [
+                {
+                    "id": "GA-2020-001",
+                    "plate": "OLD-0001",
+                    "model": "Honda Civic",
+                    "type": "Sedan",
+                    "purchaseDate": "2020-01-15",
+                    "saleDate": "2025-12-20",
+                    "purchasePrice": 800000,
+                    "salePrice": 450000,
+                    "totalRentalRevenue": 2400000,
+                    "totalOperatingCost": 1800000,
+                    "totalProfit": 1050000,
+                    "holdingPeriod": 5.95,
+                    "status": "completed",
+                    "notes": "5年期滿，以市價出售"
+                },
+                {
+                    "id": "GA-2019-005",
+                    "plate": "OLD-0005",
+                    "model": "Toyota Vios",
+                    "type": "Sedan",
+                    "purchaseDate": "2019-06-10",
+                    "saleDate": "2025-06-08",
+                    "purchasePrice": 650000,
+                    "salePrice": 280000,
+                    "totalRentalRevenue": 3200000,
+                    "totalOperatingCost": 2400000,
+                    "totalProfit": 1430000,
+                    "holdingPeriod": 5.99,
+                    "status": "completed",
+                    "notes": "6年期滿，以市價出售"
+                },
+                {
+                    "id": "HSR-001",
+                    "plate": "HSR-0001",
+                    "model": "VW Caravelle",
+                    "type": "MPV",
+                    "purchaseDate": "2021-03-20",
+                    "saleDate": "2025-11-15",
+                    "purchasePrice": 1200000,
+                    "salePrice": 650000,
+                    "totalRentalRevenue": 4800000,
+                    "totalOperatingCost": 3200000,
+                    "totalProfit": 2250000,
+                    "holdingPeriod": 4.67,
+                    "status": "completed",
+                    "notes": "高鐵接駁車，因租客需求提前轉售"
+                },
+                {
+                    "id": "TRK-001",
+                    "plate": "TRK-0001",
+                    "model": "Isuzu NPR",
+                    "type": "Track",
+                    "purchaseDate": "2018-09-05",
+                    "saleDate": "2025-09-10",
+                    "purchasePrice": 2000000,
+                    "salePrice": 850000,
+                    "totalRentalRevenue": 8500000,
+                    "totalOperatingCost": 5800000,
+                    "totalProfit": 2650000,
+                    "holdingPeriod": 7.01,
+                    "status": "completed",
+                    "notes": "7年期滿，貨車仍有穩定需求"
+                },
+                {
+                    "id": "VAN-001",
+                    "plate": "VAN-0001",
+                    "model": "Ford Transit Custom",
+                    "type": "VAN",
+                    "purchaseDate": "2021-11-12",
+                    "saleDate": "2025-08-30",
+                    "purchasePrice": 900000,
+                    "salePrice": 420000,
+                    "totalRentalRevenue": 2100000,
+                    "totalOperatingCost": 1950000,
+                    "totalProfit": 570000,
+                    "holdingPeriod": 3.81,
+                    "status": "completed",
+                    "notes": "因維修成本過高，提前處分"
+                }
+            ],
+            "terminatedVehicles": [
+                {
+                    "id": "GA-2022-003",
+                    "plate": "TERM-001",
+                    "model": "Hyundai Elantra",
+                    "type": "Sedan",
+                    "leaseStartDate": "2022-05-01",
+                    "terminationDate": "2025-02-15",
+                    "purchasePrice": 750000,
+                    "rentalRevenueReceived": 1800000,
+                    "terminationFeeReceived": 150000,
+                    "totalOperatingCost": 1200000,
+                    "totalProfit": 700000,
+                    "holdingPeriod": 2.76,
+                    "terminationReason": "租客業務縮減",
+                    "status": "terminated",
+                    "notes": "提前解約，收取違約金"
+                },
+                {
+                    "id": "HSR-003",
+                    "plate": "TERM-002",
+                    "model": "Nissan Serena",
+                    "type": "MPV",
+                    "leaseStartDate": "2023-01-10",
+                    "terminationDate": "2025-07-20",
+                    "purchasePrice": 1100000,
+                    "rentalRevenueReceived": 1950000,
+                    "terminationFeeReceived": 200000,
+                    "totalOperatingCost": 1400000,
+                    "totalProfit": 850000,
+                    "holdingPeriod": 2.53,
+                    "terminationReason": "租客轉向自購",
+                    "status": "terminated",
+                    "notes": "2.5年提前解約"
+                },
+                {
+                    "id": "TRK-003",
+                    "plate": "TERM-003",
+                    "model": "Mitsubishi Fuso",
+                    "type": "Track",
+                    "leaseStartDate": "2022-08-15",
+                    "terminationDate": "2025-05-10",
+                    "purchasePrice": 1800000,
+                    "rentalRevenueReceived": 3200000,
+                    "terminationFeeReceived": 300000,
+                    "totalOperatingCost": 2400000,
+                    "totalProfit": 1100000,
+                    "holdingPeriod": 2.78,
+                    "terminationReason": "租客併購後車隊整併",
+                    "status": "terminated",
+                    "notes": "因企業併購而解約"
+                },
+                {
+                    "id": "VAN-005",
+                    "plate": "TERM-004",
+                    "model": "Mercedes Sprinter",
+                    "type": "VAN",
+                    "leaseStartDate": "2023-06-20",
+                    "terminationDate": "2025-03-30",
+                    "purchasePrice": 1050000,
+                    "rentalRevenueReceived": 1200000,
+                    "terminationFeeReceived": 100000,
+                    "totalOperatingCost": 950000,
+                    "totalProfit": 400000,
+                    "holdingPeriod": 1.78,
+                    "terminationReason": "租客經營困難",
+                    "status": "terminated",
+                    "notes": "1.8年提前解約，虧損風險"
+                },
+                {
+                    "id": "GA-2023-008",
+                    "plate": "TERM-005",
+                    "model": "Mazda CX-5",
+                    "type": "SUV",
+                    "leaseStartDate": "2023-03-05",
+                    "terminationDate": "2025-09-15",
+                    "purchasePrice": 1200000,
+                    "rentalRevenueReceived": 1600000,
+                    "terminationFeeReceived": 120000,
+                    "totalOperatingCost": 1100000,
+                    "totalProfit": 620000,
+                    "holdingPeriod": 2.52,
+                    "terminationReason": "租客主動提前結束",
+                    "status": "terminated",
+                    "notes": "2.5年提前解約"
+                }
+            ]
+        };
+        
+        // 初始化
+        document.getElementById('reportDate').textContent = fleetData.reportDate;
+        document.getElementById('totalVehicles').textContent = fleetData.summary.totalVehicles;
+        document.getElementById('activeVehicles').textContent = fleetData.summary.status.active;
+        document.getElementById('idleVehicles').textContent = fleetData.summary.status.idle;
+        document.getElementById('maintenanceVehicles').textContent = fleetData.summary.status.maintenance;
+        document.getElementById('soldVehicles').textContent = fleetData.summary.status.sold;
+        document.getElementById('terminatedVehicles').textContent = fleetData.summary.status.terminated;
+        
+        // 標籤切換
+        function switchTab(tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-btn');
+            
+            contents.forEach(c => c.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            setTimeout(() => {
+                if (tabName === 'overview') initOverviewCharts();
+                else if (tabName === 'trends') initTrendCharts();
+                else if (tabName === 'vehicles') { initVehicleCharts(); populateVehicleTable(); }
+                else if (tabName === 'sold') populateSoldTable();
+                else if (tabName === 'terminated') populateTerminatedTable();
+                else if (tabName === 'profitability') initProfitabilityCharts();
+                else if (tabName === 'costs') initCostCharts();
+            }, 100);
+        }
+        
+        // 圖表配置
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: { size: 12 },
+                        padding: 15
+                    }
+                }
+            }
+        };
+        
+        // 初始化車隊總覽圖表
+        function initOverviewCharts() {
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['使用中', '閒置', '維修中', '中途解約', '已出售'],
+                    datasets: [{
+                        data: [85, 12, 8, 10, 5],
+                        backgroundColor: ['#51cf66', '#ffd93d', '#ff922b', '#ff6b6b', '#868e96']
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('typeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sedan', 'SUV', 'MPV', 'VAN', 'Track'],
+                    datasets: [{
+                        data: [40, 30, 25, 15, 10],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('ageChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['<1年', '1-3年', '3-5年', '>5年'],
+                    datasets: [{
+                        label: '車輛台數',
+                        data: [15, 45, 40, 20],
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('typePerformanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Sedan', 'SUV', 'MPV', 'VAN', 'Track'],
+                    datasets: [
+                        {
+                            label: '利潤率 (%)',
+                            data: [12.5, 15.8, 18.2, 10.5, 22.4],
+                            backgroundColor: '#667eea'
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+        }
+        
+        // 初始化年度趨勢圖表
+        function initTrendCharts() {
+            const years = fleetData.yearlyTrend.map(y => y.year);
+            const revenues = fleetData.yearlyTrend.map(y => y.revenue / 1000000);
+            const expenses = fleetData.yearlyTrend.map(y => y.expense / 1000000);
+            const profits = fleetData.yearlyTrend.map(y => y.profit / 1000000);
+            
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: '收益',
+                            data: revenues,
+                            borderColor: '#51cf66',
+                            backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '成本',
+                            data: expenses,
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '淨利',
+                            data: profits,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('claimRateChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '出險率 (%)',
+                        data: fleetData.yearlyTrend.map(y => y.claimRate),
+                        borderColor: '#ff922b',
+                        backgroundColor: 'rgba(255, 146, 43, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('utilizationChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '使用率 (%)',
+                        data: fleetData.yearlyTrend.map(y => y.utilization),
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('profitTrendChart'), {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: '年度淨利 (百萬元)',
+                        data: profits,
+                        backgroundColor: years.map((y, i) => fleetData.yearlyTrend[i].forecast ? '#ffd93d' : '#667eea')
+                    }]
+                },
+                options: chartConfig
+            });
+        }
+        
+        // 初始化車輛分析圖表
+        function initVehicleCharts() {
+            const vehicles = fleetData.expiringVehicles;
+            
+            new Chart(document.getElementById('expiryTimelineChart'), {
+                type: 'bar',
+                data: {
+                    labels: vehicles.map(v => v.id),
+                    datasets: [{
+                        label: '距離到期天數',
+                        data: vehicles.map(v => Math.ceil((new Date(v.leaseEnd) - new Date()) / (1000 * 60 * 60 * 24))),
+                        backgroundColor: vehicles.map(v => {
+                            if (v.status === 'critical') return '#ff6b6b';
+                            if (v.status === 'warning') return '#ffd93d';
+                            return '#51cf66';
+                        })
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('expiryProfitChart'), {
+                type: 'bar',
+                data: {
+                    labels: vehicles.map(v => v.id),
+                    datasets: [{
+                        label: '淨利 (萬元)',
+                        data: vehicles.map(v => v.profit / 10000),
+                        backgroundColor: vehicles.map(v => v.profit > 0 ? '#51cf66' : '#ff6b6b')
+                    }]
+                },
+                options: chartConfig
+            });
+        }
+        
+        // 填充車輛表格
+        function populateVehicleTable() {
+            const tbody = document.getElementById('vehicleTableBody');
+            tbody.innerHTML = '';
+            
+            fleetData.expiringVehicles.forEach(v => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${v.id}</td>
+                    <td>${v.plate}</td>
+                    <td>${v.type}</td>
+                    <td>${v.leaseEnd}</td>
+                    <td>$${(v.revenue / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.cost / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.profit / 10000).toFixed(0)}萬</td>
+                    <td>${v.margin.toFixed(1)}%</td>
+                    <td>${v.utilization}%</td>
+                    <td><span class="status-badge status-${v.status}">${v.status === 'critical' ? '🔴 緊急' : v.status === 'warning' ? '🟡 警示' : '🟢 一般'}</span></td>
+                    <td>${v.recommendation}</td>
+                `;
+            });
+        }
+
+        // 填充已出售車輛表格
+        function populateSoldTable() {
+            const tbody = document.getElementById('soldTableBody');
+            tbody.innerHTML = '';
+            
+            let totalPurchase = 0, totalSale = 0, totalRental = 0, totalCost = 0, totalProfit = 0;
+            
+            fleetData.soldVehicles.forEach(v => {
+                totalPurchase += v.purchasePrice;
+                totalSale += v.salePrice;
+                totalRental += v.totalRentalRevenue;
+                totalCost += v.totalOperatingCost;
+                totalProfit += v.totalProfit;
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${v.id}</td>
+                    <td>${v.plate}</td>
+                    <td>${v.type}</td>
+                    <td>${v.purchaseDate}</td>
+                    <td>${v.saleDate}</td>
+                    <td>$${(v.purchasePrice / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.salePrice / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.totalRentalRevenue / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.totalOperatingCost / 1000000).toFixed(2)}M</td>
+                    <td class="profit-positive">$${(v.totalProfit / 10000).toFixed(0)}萬</td>
+                    <td>${v.holdingPeriod.toFixed(1)}年</td>
+                    <td>${v.notes}</td>
+                `;
+            });
+            
+            document.getElementById('soldCount').textContent = fleetData.soldVehicles.length;
+            document.getElementById('soldTotalPurchase').textContent = '$' + (totalPurchase / 1000000).toFixed(1) + 'M';
+            document.getElementById('soldTotalSale').textContent = '$' + (totalSale / 1000000).toFixed(2) + 'M';
+            document.getElementById('soldTotalRental').textContent = '$' + (totalRental / 1000000).toFixed(1) + 'M';
+            document.getElementById('soldTotalCost').textContent = '$' + (totalCost / 1000000).toFixed(2) + 'M';
+            document.getElementById('soldTotalProfit').textContent = '$' + (totalProfit / 1000000).toFixed(2) + 'M';
+        }
+
+        // 填充解約車輛表格
+        function populateTerminatedTable() {
+            const tbody = document.getElementById('terminatedTableBody');
+            tbody.innerHTML = '';
+            
+            let totalPurchase = 0, totalRental = 0, totalFee = 0, totalCost = 0, totalProfit = 0;
+            
+            fleetData.terminatedVehicles.forEach(v => {
+                totalPurchase += v.purchasePrice;
+                totalRental += v.rentalRevenueReceived;
+                totalFee += v.terminationFeeReceived;
+                totalCost += v.totalOperatingCost;
+                totalProfit += v.totalProfit;
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${v.id}</td>
+                    <td>${v.plate}</td>
+                    <td>${v.type}</td>
+                    <td>${v.leaseStartDate}</td>
+                    <td>${v.terminationDate}</td>
+                    <td>$${(v.purchasePrice / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.rentalRevenueReceived / 1000000).toFixed(2)}M</td>
+                    <td>$${(v.terminationFeeReceived / 10000).toFixed(0)}萬</td>
+                    <td>$${(v.totalOperatingCost / 1000000).toFixed(2)}M</td>
+                    <td class="profit-positive">$${(v.totalProfit / 10000).toFixed(0)}萬</td>
+                    <td>${v.holdingPeriod.toFixed(1)}年</td>
+                    <td>${v.terminationReason}</td>
+                    <td>${v.notes}</td>
+                `;
+            });
+            
+            document.getElementById('termCount').textContent = fleetData.terminatedVehicles.length;
+            document.getElementById('termTotalPurchase').textContent = '$' + (totalPurchase / 1000000).toFixed(1) + 'M';
+            document.getElementById('termTotalRental').textContent = '$' + (totalRental / 1000000).toFixed(2) + 'M';
+            document.getElementById('termTotalFee').textContent = '$' + (totalFee / 1000000).toFixed(2) + 'M';
+            document.getElementById('termTotalCost').textContent = '$' + (totalCost / 1000000).toFixed(2) + 'M';
+            document.getElementById('termTotalProfit').textContent = '$' + (totalProfit / 1000000).toFixed(2) + 'M';
+        }
+        
+        // 車輛過濾
+        function filterVehicles() {
+            const searchText = document.getElementById('searchVehicle').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            const rows = document.querySelectorAll('#vehicleTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const status = row.querySelector('.status-badge').className.includes(statusFilter) || statusFilter === '';
+                row.style.display = (text.includes(searchText) && status) ? '' : 'none';
+            });
+        }
+        
+        // 初始化個別損益圖表
+        function initProfitabilityCharts() {
+            const vehicles = fleetData.expiringVehicles;
+            
+            new Chart(document.getElementById('vehicleComparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: vehicles.map(v => v.id),
+                    datasets: [
+                        {
+                            label: '收益',
+                            data: vehicles.map(v => v.revenue / 1000000),
+                            backgroundColor: '#51cf66'
+                        },
+                        {
+                            label: '成本',
+                            data: vehicles.map(v => v.cost / 1000000),
+                            backgroundColor: '#ff6b6b'
+                        },
+                        {
+                            label: '淨利',
+                            data: vehicles.map(v => v.profit / 1000000),
+                            backgroundColor: '#667eea'
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('marginRankChart'), {
+                type: 'bar',
+                data: {
+                    labels: vehicles.map(v => v.id),
+                    datasets: [{
+                        label: '利潤率 (%)',
+                        data: vehicles.map(v => v.margin),
+                        backgroundColor: vehicles.map(v => v.margin > 0 ? '#51cf66' : '#ff6b6b')
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    indexAxis: 'y'
+                }
+            });
+            
+            new Chart(document.getElementById('scatterChart'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '車輛績效',
+                        data: vehicles.map(v => ({x: v.utilization, y: v.margin})),
+                        backgroundColor: vehicles.map(v => {
+                            if (v.status === 'critical') return '#ff6b6b';
+                            if (v.status === 'warning') return '#ffd93d';
+                            return '#51cf66';
+                        }),
+                        pointRadius: 8
+                    }]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        x: { title: { display: true, text: '使用率 (%)' } },
+                        y: { title: { display: true, text: '利潤率 (%)' } }
+                    }
+                }
+            });
+        }
+        
+        // 初始化成本結構圖表
+        function initCostCharts() {
+            new Chart(document.getElementById('costStructureChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['購車', '稅金', '維修', '保費', '其他'],
+                    datasets: [{
+                        data: [45.0, 12.5, 18.5, 15.0, 9.0],
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#868e96']
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('typeMarginChart'), {
+                type: 'bar',
+                data: {
+                    labels: fleetData.typePerformance.map(t => t.type),
+                    datasets: [{
+                        label: '利潤率 (%)',
+                        data: fleetData.typePerformance.map(t => t.profitMargin),
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: chartConfig
+            });
+            
+            new Chart(document.getElementById('costStackChart'), {
+                type: 'bar',
+                data: {
+                    labels: fleetData.expiringVehicles.map(v => v.id),
+                    datasets: [{
+                        label: '成本 (百萬元)',
+                        data: fleetData.expiringVehicles.map(v => v.cost / 1000000),
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: chartConfig
+            });
+        }
+        
+        // 初始化首頁圖表
+        initOverviewCharts();
+    </script>
+</body>
+                              </html>
