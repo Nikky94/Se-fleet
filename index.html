@@ -630,30 +630,29 @@
     <script>
         // 數據載入
         const fleetData = {
-            "reportDate": "2026-02-25",
-            "reportTitle": "進階車隊營運績效報表 (10年期趨勢分析)",
-            "company": "GA Dept. - Fleet Management Division",
+            "reportDate": "2026-02-26 ",
+            "reportTitle": "車隊績效報表 (10年期趨勢分析)",
+            "company": "SE Corp. - Fleet Management Division",
             "summary": {
-                "totalVehicles": 120,
+                "totalVehicles": 30,
                 "status": {
-                    "active": 85,
-                    "idle": 12,
-                    "maintenance": 8,
-                    "terminated": 10,
-                    "sold": 5
+                    "active": 29,
+                    "idle": 1,
+                    "maintenance": 0,
+                    "terminated": 0,
+                    "sold": 28
                 },
                 "vehicleTypes": {
-                    "Sedan": 40,
-                    "SUV": 30,
-                    "MPV": 25,
-                    "VAN": 15,
-                    "Track": 10
+                    "Sedan": 26,
+                    "SUV": 1,
+                    "MPV": 2,
+                    "VAN": 0,
                 },
                 "fleetAge": {
-                    "under1Year": 15,
-                    "1to3Years": 45,
-                    "3to5Years": 40,
-                    "over5Years": 20
+                    "under1Year": 0,
+                    "1to3Years": 27,
+                    "3to5Years": 2,
+                    "over5Years": 0
                 }
             },
             "yearlyTrend": [
@@ -676,11 +675,10 @@
                 "other": 9.0
             },
             "typePerformance": [
-                {"type": "Sedan", "count": 40, "utilization": 82.5, "profitMargin": 12.5, "avgCost": 850000},
-                {"type": "SUV", "count": 30, "utilization": 88.2, "profitMargin": 15.8, "avgCost": 1250000},
-                {"type": "MPV", "count": 25, "utilization": 91.5, "profitMargin": 18.2, "avgCost": 1550000},
-                {"type": "VAN", "count": 15, "utilization": 85.0, "profitMargin": 10.5, "avgCost": 950000},
-                {"type": "Track", "count": 10, "utilization": 94.5, "profitMargin": 22.4, "avgCost": 2550000}
+                {"type": "Sedan", "count": 26, "utilization": 82.5, "profitMargin": 12.5, "avgCost": 850000},
+                {"type": "SUV", "count": 1, "utilization": 88.2, "profitMargin": 15.8, "avgCost": 1250000},
+                {"type": "MPV", "count": 2, "utilization": 91.5, "profitMargin": 18.2, "avgCost": 1550000},
+                {"type": "VAN", "count": 0, "utilization": 85.0, "profitMargin": 10.5, "avgCost": 950000},
             ],
             "expiringVehicles": [
                 {
@@ -976,8 +974,7 @@
                 type: 'doughnut',
                 data: {
                     labels: ['使用中', '閒置', '維修中', '中途解約', '已出售'],
-                    datasets: [{
-                        data: [85, 12, 8, 10, 5],
+                    datasets: [{29, 1, 0, 5, 28],
                         backgroundColor: ['#51cf66', '#ffd93d', '#ff922b', '#ff6b6b', '#868e96']
                     }]
                 },
@@ -987,10 +984,10 @@
             new Chart(document.getElementById('typeChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Sedan', 'SUV', 'MPV', 'VAN', 'Track'],
+                    labels: ['Sedan', 'SUV', 'MPV', 'VAN'],
                     datasets: [{
-                        data: [40, 30, 25, 15, 10],
-                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
+                        data: [40, 30, 25, 15]
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe']
                     }]
                 },
                 options: chartConfig
@@ -1002,7 +999,7 @@
                     labels: ['<1年', '1-3年', '3-5年', '>5年'],
                     datasets: [{
                         label: '車輛台數',
-                        data: [15, 45, 40, 20],
+                        data: [0, 27, 2, 0],
                         backgroundColor: '#667eea'
                     }]
                 },
@@ -1012,11 +1009,11 @@
             new Chart(document.getElementById('typePerformanceChart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Sedan', 'SUV', 'MPV', 'VAN', 'Track'],
+                    labels: ['Sedan', 'SUV', 'MPV', 'VAN']
                     datasets: [
                         {
                             label: '利潤率 (%)',
-                            data: [12.5, 15.8, 18.2, 10.5, 22.4],
+                            data: [12.5, 15.8, 18.2, 10.5],
                             backgroundColor: '#667eea'
                         }
                     ]
